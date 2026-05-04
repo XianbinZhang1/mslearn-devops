@@ -62,31 +62,44 @@ app.MapGet("/", () =>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Catalog API</title>
-    <style>
-        body { font-family: Segoe UI, Arial, sans-serif; margin: 2rem; line-height: 1.5; }
-        h1 { margin-bottom: .25rem; }
-        p { color: #333; }
-        ul { padding-left: 1.25rem; }
-        code { background: #f2f2f2; padding: .15rem .35rem; border-radius: 4px; }
-        .card { max-width: 760px; border: 1px solid #ddd; border-radius: 10px; padding: 1rem 1.25rem; }
-    </style>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+          crossorigin="anonymous" />
 </head>
-<body>
-    <div class="card">
-        <h1>Catalog API is running</h1>
-        <p>Use the links below to test core endpoints.</p>
-        <ul>
-            <li><a href="/health">GET /health</a> - service and Cosmos connectivity check</li>
-            <li><a href="/products">GET /products</a> - list products</li>
-            <li><a href="/orders">GET /orders</a> - list orders</li>
-            <li><a href="/swagger">Swagger UI</a> - interactive API explorer</li>
-            <li><a href="/swagger/v1/swagger.json">OpenAPI JSON</a> - API schema</li>
-        </ul>
-        <p>Write endpoints:</p>
-        <ul>
-            <li><code>POST /products</code></li>
-            <li><code>POST /orders</code></li>
-        </ul>
+<body class="bg-light">
+    <div class="container py-4" style="max-width:760px">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title h4 mb-1">Catalog API is running</h1>
+                <p class="text-muted">Use the links below to test core endpoints.</p>
+                <ul class="list-unstyled mb-2">
+                    <li><a href="/health">GET /health</a> &ndash; service and Cosmos connectivity check</li>
+                    <li><a href="/products">GET /products</a> &ndash; list all products</li>
+                    <li>
+                        <a href="/products/search">GET /products/search</a> &ndash; search products (in-stock only by default)
+                        <br />
+                        <span class="ms-3 text-muted small">
+                            Query params: <code>keyword</code>, <code>category</code>, <code>inStockOnly</code> (bool, default <code>true</code>)
+                        </span>
+                        <br />
+                        <span class="ms-3 text-muted small">
+                            Backorderable items include <code class="text-warning-emphasis">"isBackorderable": true</code> &mdash;
+                            display these with a
+                            <span class="badge bg-warning text-dark">Backorder</span> badge.
+                        </span>
+                    </li>
+                    <li><a href="/orders">GET /orders</a> &ndash; list orders</li>
+                    <li><a href="/swagger">Swagger UI</a> &ndash; interactive API explorer</li>
+                    <li><a href="/swagger/v1/swagger.json">OpenAPI JSON</a> &ndash; API schema</li>
+                </ul>
+                <p class="mb-1">Write endpoints:</p>
+                <ul class="list-unstyled">
+                    <li><code>POST /products</code></li>
+                    <li><code>POST /orders</code></li>
+                </ul>
+            </div>
+        </div>
     </div>
 </body>
 </html>
@@ -110,6 +123,19 @@ app.MapGet("/products", async (CosmosDbService db) =>
     var products = await db.GetProductsAsync();
     return Results.Ok(products);
 });
+
+// GET /products/search — search in-stock products (keyword / category / inStockOnly)
+// Must be registered BEFORE /products/{id} so the literal "search" segment is not
+// mistaken for an {id} capture.
+app.MapGet("/products/search", async (
+    string? keyword,
+    string? category,
+    bool? inStockOnly,
+    CosmosDbService db) =>
+{
+    var products = await db.SearchProductsAsync(keyword, category, inStockOnly ?? true);
+    return Results.Ok(products);
+}).WithName("SearchProducts");
 
 // GET /products/{id} — get a single product by id
 app.MapGet("/products/{id}", async (string id, CosmosDbService db) =>

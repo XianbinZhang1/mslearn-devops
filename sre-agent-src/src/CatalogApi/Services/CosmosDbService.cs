@@ -122,6 +122,41 @@ public class CosmosDbService
         _logger.LogInformation("Seeded {Count} orders.", orders.Count);
     }
 
+    /// <summary>
+    /// Searches products with query-level inventory filtering.
+    /// Out-of-stock products (stock = 0, not backorderable, no positive inventoryStatus)
+    /// are excluded directly in the Cosmos DB SQL query — no in-memory post-filtering.
+    /// </summary>
+    /// <param name="keyword">Optional keyword matched against name, description, and category.</param>
+    /// <param name="category">Optional exact category filter (case-insensitive).</param>
+    /// <param name="inStockOnly">
+    ///   When <c>true</c> (the default) only purchasable products are returned.
+    ///   Backorderable items with 0 stock are included and carry
+    ///   <see cref="Product.IsBackorderable"/> = <c>true</c> so callers can label them.
+    /// </param>
+    public async Task<IEnumerable<Product>> SearchProductsAsync(
+        string? keyword = null,
+        string? category = null,
+        bool inStockOnly = true)
+    {
+        EnsureContainers();
+
+        var (sql, parameters) = ProductSearchQueryBuilder.Build(keyword, category, inStockOnly);
+
+        var queryDef = new QueryDefinition(sql);
+        foreach (var (name, value) in parameters)
+            queryDef = queryDef.WithParameter(name, value);
+
+        var iterator = _productsContainer!.GetItemQueryIterator<Product>(queryDef);
+        var results = new List<Product>();
+        while (iterator.HasMoreResults)
+        {
+            var response = await iterator.ReadNextAsync();
+            results.AddRange(response);
+        }
+        return results;
+    }
+
     /// <summary>Returns all products in the container.</summary>
     public async Task<IEnumerable<Product>> GetProductsAsync()
     {
