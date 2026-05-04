@@ -89,6 +89,11 @@ public class CosmosDbService
             new() { Name = "Office Chair",         Category = "Furniture",   Description = "Mesh office chair with lumbar support",              Price = 349.99m, Stock = 25 },
             new() { Name = "Laptop Stand",         Category = "Accessories", Description = "Aluminum laptop stand with ventilation",             Price = 49.99m,  Stock = 300 },
             new() { Name = "Mouse Pad XL",         Category = "Accessories", Description = "Extended mouse pad with stitched edges",             Price = 19.99m,  Stock = 500 },
+            // Out-of-stock items (excluded from search by default)
+            new() { Name = "Mechanical Keyboard",  Category = "Electronics", Description = "Tactile mechanical keyboard with RGB lighting",      Price = 129.99m, Stock = 0,   IsBackorderable = false },
+            new() { Name = "Ergonomic Mouse",      Category = "Accessories", Description = "Vertical ergonomic mouse for wrist health",          Price = 59.99m,  Stock = 0,   IsBackorderable = false },
+            // Backorderable item (0 stock but eligible for backorder — may appear in search, labeled)
+            new() { Name = "4K Webcam Pro",        Category = "Electronics", Description = "4K webcam with auto-framing and noise cancellation", Price = 199.99m, Stock = 0,   IsBackorderable = true },
         };
 
         foreach (var product in products)
